@@ -1,38 +1,18 @@
-package org.wikitolearn.EasyLinkAPI.controllers;
+package org.wikitolearn.EasyLinkAPI.controllers.utils;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Singleton;
-import javax.servlet.ServletContext;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
+import org.wikitolearn.EasyLinkAPI.models.EasyLinkBean;
 
-import it.uniroma1.lcl.babelfy.commons.BabelfyConfiguration;
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
+
 import it.uniroma1.lcl.babelfy.commons.BabelfyParameters;
 import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.MCS;
 import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.MatchingType;
@@ -40,136 +20,50 @@ import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.ScoredCandidates;
 import it.uniroma1.lcl.babelfy.commons.annotation.SemanticAnnotation;
 import it.uniroma1.lcl.babelfy.core.Babelfy;
 import it.uniroma1.lcl.babelnet.BabelNet;
-import it.uniroma1.lcl.babelnet.BabelNetConfiguration;
 import it.uniroma1.lcl.babelnet.BabelSynset;
 import it.uniroma1.lcl.babelnet.BabelSynsetID;
 import it.uniroma1.lcl.babelnet.data.BabelCategory;
 import it.uniroma1.lcl.babelnet.data.BabelDomain;
 import it.uniroma1.lcl.babelnet.data.BabelGloss;
 import it.uniroma1.lcl.babelnet.data.BabelPOS;
-import it.uniroma1.lcl.jlt.Configuration;
 import it.uniroma1.lcl.jlt.util.Language;
-import jersey.repackaged.com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import org.glassfish.jersey.server.ManagedAsync;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.AnalyzeCallable;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.CleanInputText;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.ThreadProgress;
-import org.wikitolearn.EasyLinkAPI.models.EasyLinkBean;
-
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-
-@Singleton
-@Path("/analyze")
-public class AnalyzeController {
-
-	@Context
-	private ServletContext application;
+public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 
 	private Detector detector;
-	private Map<String, Language> languages = new HashMap<>();
-
-	@PostConstruct
-	public void init() {
-		Configuration jltConfiguration = Configuration.getInstance();
-		jltConfiguration
-				.setConfigurationFile(new File(application.getRealPath("/") + "/WEB-INF/config/jlt.properties"));
-		BabelNetConfiguration bnconf = BabelNetConfiguration.getInstance();
-		bnconf.setConfigurationFile(new File(application.getRealPath("/") + "/WEB-INF/config/babelnet.properties"));
-		bnconf.setBasePath(application.getRealPath("/") + "/WEB-INF/");
-		BabelfyConfiguration.getInstance()
-				.setConfigurationFile(new File(application.getRealPath("/") + "/WEB-INF/config/babelfy.properties"));
-		
-		try {
-			DetectorFactory.clear();
-			DetectorFactory.loadProfile(application.getRealPath("/") + "/WEB-INF/resources/profiles");
-		} catch (LangDetectException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		languages.put("it", Language.IT);
-		languages.put("en", Language.EN);
-		languages.put("fr", Language.FR);
-		languages.put("es", Language.ES);
-		languages.put("de", Language.DE);
-		
-		application.setAttribute("ActiveThreads", new HashMap<UUID, ThreadProgress>());
-	}
-
-	@GET
-	@Produces(MediaType.TEXT_PLAIN)
-	public String getIt() {
-		return "Test EasyLinkAPI, @GET works!";
-	}
+	private Map<String, Language> languages;
+	private String inputText;
+	private ThreadProgress threadProgress;
 	
-	@POST
-	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	@Produces(MediaType.TEXT_PLAIN)
-	public String analyze(@FormParam("wikitext") String inputText, @Context UriInfo ui) throws URISyntaxException {
-		UUID requestId = UUID.randomUUID();
-		
-		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("ActiveThreads");
-		ThreadProgress t = new ThreadProgress(requestId);
-		activeThreads.put(requestId, t);
-		
-		ThreadFactory threadFactory = new ThreadFactoryBuilder()
-		        .setNameFormat(requestId.toString())
-		        .build();
-		
-		ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
-		AnalyzeCallable ac = new AnalyzeCallable(detector, languages, inputText, t);
-		Future<List<EasyLinkBean>> f = e.submit(ac);
-		/*List<EasyLinkBean> results = new ArrayList<>();
-		try {
-			results = f.get();
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ExecutionException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
-		e.shutdown();*/
-       return requestId.toString();
-		
-		//return results;
-		
+	public AnalyzeCallable(Detector detector, Map<String, Language> languages, String inputText, ThreadProgress t) {
+		this.detector = detector;
+		this.languages = languages;
+		this.inputText = inputText;
+		this.threadProgress = t;
 	}
 
-	/*@POST
-	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	@Produces(MediaType.APPLICATION_JSON)
-	@ManagedAsync
-	public void analyze(@FormParam("wikitext") String inputText, @Suspended final AsyncResponse asyncResponse) {
+	@Override
+	public List<EasyLinkBean> call() throws Exception {
 		List<EasyLinkBean> results = getAndProcessAnnotations(inputText);
-        asyncResponse.resume(results);
-	}*/
-	
-	
-	
-	/*@POST
-	@Produces(MediaType.APPLICATION_JSON)
-	public List<EasyLinkBean> analyze(@FormParam("wikitext") String inputText) {
-		List<EasyLinkBean> results = getAndProcessAnnotations(inputText);
-        return results;
-	}*/
-	
-	/*private List<EasyLinkBean> getAndProcessAnnotations(String inputText){
-		
+		threadProgress.setResults(results);
+		return results;
+	}
+
+	private List<EasyLinkBean> getAndProcessAnnotations(String inputText) {
+		threadProgress.setStatus("Progress");
+		threadProgress.setProgress(10);
 		List<EasyLinkBean> resultsList = new ArrayList<>();
 
 		String cleanText = CleanInputText.removeMath(inputText);
 		String lang = "";
-
+		threadProgress.setStatus("Progress");
+		threadProgress.setProgress(20);
+		
 		try {
 			detector = DetectorFactory.create();
 			detector.append(cleanText);
 			lang = detector.detect();
-			//System.out.println(lang);
+			// System.out.println(lang);
 		} catch (LangDetectException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -177,9 +71,11 @@ public class AnalyzeController {
 
 		BabelNet bn = BabelNet.getInstance();
 		Babelfy bfy = new Babelfy(setBabelfyParameters());
-		
+		threadProgress.setStatus("Progress");
+		threadProgress.setProgress(30);
 		List<SemanticAnnotation> bfyAnnotations = bfy.babelfy(cleanText, languages.get(lang));
-
+		threadProgress.setStatus("Progress");
+		threadProgress.setProgress(40);
 		for (SemanticAnnotation annotation : bfyAnnotations) {
 			BabelSynset syns = bn.getSynset(new BabelSynsetID(annotation.getBabelSynsetID()));
 			if (BabelPOS.NOUN.equals(syns.getPOS()) || BabelPOS.ADJECTIVE.equals(syns.getPOS())) {
@@ -191,7 +87,8 @@ public class AnalyzeController {
 						+ languages.get(lang));
 				e.setWikiLink(
 						"https://" + languages.get(lang).toString().toLowerCase() + ".wikipedia.org/wiki/" + frag);
-
+				threadProgress.setStatus("Progress");
+				threadProgress.setProgress(50);
 				// Get WikipediaCategories
 				List<BabelCategory> categories = syns.getCategories(languages.get(lang));
 
@@ -202,7 +99,6 @@ public class AnalyzeController {
 					Map.Entry<BabelDomain, Double> entry = domains.entrySet().iterator().next();
 					e.setBabelDomain(entry.getKey().getDomainString());
 				}
-
 				// Get glosses
 				List<BabelGloss> glosses = syns.getGlosses(languages.get(lang));
 
@@ -218,8 +114,10 @@ public class AnalyzeController {
 				}
 			}
 		}
+		threadProgress.setStatus("Completed");
+		threadProgress.setProgress(100);
 		return resultsList;
-		
+
 	}
 
 	private void printResult(String lang, String frag, SemanticAnnotation annotation, BabelSynset syns,
@@ -256,23 +154,23 @@ public class AnalyzeController {
 			System.out.println("\t Gloss source:" + g.getSource().getSourceName());
 		}
 	}
-	
-	private BabelfyParameters setBabelfyParameters(){
+
+	private BabelfyParameters setBabelfyParameters() {
 		BabelfyParameters bp = new BabelfyParameters();
 		// extends the candidates sets with the aida_means relations from YAGO
 		bp.setExtendCandidatesWithAIDAmeans(true);
 		bp.setScoredCandidates(ScoredCandidates.TOP);
 		// Secondo me l'exact matching non funziona, bisogna controllare bene
 		bp.setMatchingType(MatchingType.EXACT_MATCHING);
-		
+		/*
 		 * Most Common Sense (MCS) backoff strategy that returns the most common
 		 * sense for the text fragment when the system does not have enough
 		 * information to select a meaning
-		 
+		 */
 		bp.setMCS(MCS.ON);
 		// Se imposto il Threshold non ottengo gli score! Perchè?!?!
 		// bp.setThreshold(90.0);
 		
 		return bp;
-	}*/
+	}
 }
