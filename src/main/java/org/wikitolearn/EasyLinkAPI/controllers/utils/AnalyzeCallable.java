@@ -34,7 +34,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 	private Map<String, Language> languages;
 	private String inputText;
 	private ThreadProgress threadProgress;
-	
+
 	public AnalyzeCallable(Detector detector, Map<String, Language> languages, String inputText, ThreadProgress t) {
 		this.detector = detector;
 		this.languages = languages;
@@ -58,7 +58,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		String lang = "";
 		threadProgress.setStatus("Progress");
 		threadProgress.setProgress(20);
-		
+
 		try {
 			detector = DetectorFactory.create();
 			detector.append(cleanText);
@@ -170,7 +170,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		bp.setMCS(MCS.ON);
 		// Se imposto il Threshold non ottengo gli score! Perchè?!?!
 		// bp.setThreshold(90.0);
-		
+
 		return bp;
 	}
 }
