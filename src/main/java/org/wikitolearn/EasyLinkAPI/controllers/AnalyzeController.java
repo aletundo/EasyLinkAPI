@@ -1,19 +1,13 @@
 package org.wikitolearn.EasyLinkAPI.controllers;
 
 import java.io.File;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
-import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Singleton;
@@ -24,38 +18,18 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
+
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import it.uniroma1.lcl.babelfy.commons.BabelfyConfiguration;
-import it.uniroma1.lcl.babelfy.commons.BabelfyParameters;
-import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.MCS;
-import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.MatchingType;
-import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.ScoredCandidates;
-import it.uniroma1.lcl.babelfy.commons.annotation.SemanticAnnotation;
-import it.uniroma1.lcl.babelfy.core.Babelfy;
-import it.uniroma1.lcl.babelnet.BabelNet;
 import it.uniroma1.lcl.babelnet.BabelNetConfiguration;
-import it.uniroma1.lcl.babelnet.BabelSynset;
-import it.uniroma1.lcl.babelnet.BabelSynsetID;
-import it.uniroma1.lcl.babelnet.data.BabelCategory;
-import it.uniroma1.lcl.babelnet.data.BabelDomain;
-import it.uniroma1.lcl.babelnet.data.BabelGloss;
-import it.uniroma1.lcl.babelnet.data.BabelPOS;
 import it.uniroma1.lcl.jlt.Configuration;
 import it.uniroma1.lcl.jlt.util.Language;
 import jersey.repackaged.com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import org.glassfish.jersey.server.ManagedAsync;
 import org.wikitolearn.EasyLinkAPI.controllers.utils.AnalyzeCallable;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.CleanInputText;
 import org.wikitolearn.EasyLinkAPI.controllers.utils.ThreadProgress;
-import org.wikitolearn.EasyLinkAPI.models.EasyLinkBean;
 
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
@@ -108,24 +82,29 @@ public class AnalyzeController {
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.TEXT_PLAIN)
-	public String analyze(@FormParam("wikitext") String inputText, @Context UriInfo ui) throws URISyntaxException {
+	public String analyze(@FormParam("wikitext") String inputText, @FormParam("scoredCandidates") String scoredCandidates, @FormParam("threshold") int threshold, @Context UriInfo ui) throws URISyntaxException {
 		UUID requestId = UUID.randomUUID();
+		
+		System.out.println("Scored:" + scoredCandidates);
+		System.out.println("Threshold:" + threshold);
 
-		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("ActiveThreads");
+		@SuppressWarnings("unchecked")
+		Map<UUID, ThreadProgress> activeThreads = (HashMap<UUID, ThreadProgress>) application
+				.getAttribute("ActiveThreads");
 		ThreadProgress t = new ThreadProgress(requestId);
 		activeThreads.put(requestId, t);
 
 		ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(requestId.toString()).build();
 
 		ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
-		AnalyzeCallable ac = new AnalyzeCallable(detector, languages, inputText, t);
+		AnalyzeCallable ac = new AnalyzeCallable(detector, languages, inputText, scoredCandidates, threshold, t);
 		e.submit(ac);
 		/*
-		 * Future<List<EasyLinkBean>> f = e.submit(ac);
-		 * List<EasyLinkBean> results = new ArrayList<>(); try { results =
-		 * f.get(); } catch (InterruptedException e1) { // TODO Auto-generated
-		 * catch block e1.printStackTrace(); } catch (ExecutionException e1) {
-		 * // TODO Auto-generated catch block e1.printStackTrace(); }
+		 * Future<List<EasyLinkBean>> f = e.submit(ac); List<EasyLinkBean>
+		 * results = new ArrayList<>(); try { results = f.get(); } catch
+		 * (InterruptedException e1) { // TODO Auto-generated catch block
+		 * e1.printStackTrace(); } catch (ExecutionException e1) { // TODO
+		 * Auto-generated catch block e1.printStackTrace(); }
 		 * 
 		 * e.shutdown();
 		 */

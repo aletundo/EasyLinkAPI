@@ -1,7 +1,8 @@
 package org.wikitolearn.EasyLinkAPI.models;
 
 public class EasyLinkBean {
-	private String name;
+	private String id;
+	private String title;
 	private String gloss;
 	private String language;
 	private String babelLink;
@@ -17,14 +18,14 @@ public class EasyLinkBean {
 	/**
 	 * @return the name
 	 */
-	public String getName() {
-		return name;
+	public String getTitle() {
+		return title;
 	}
 	/**
 	 * @param name the name to set
 	 */
-	public void setName(String name) {
-		this.name = name;
+	public void setTitle(String title) {
+		this.title = title;
 	}
 	/**
 	 * @return the gloss
@@ -111,5 +112,19 @@ public class EasyLinkBean {
 	 */
 	public void setGlossSource(String glossSource) {
 		this.glossSource = glossSource;
+	}
+
+	/**
+	 * @return the id
+	 */
+	public String getId() {
+		return id;
+	}
+
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(String id) {
+		this.id = id;
 	}
 }

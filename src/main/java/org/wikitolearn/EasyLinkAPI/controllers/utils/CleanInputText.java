@@ -5,12 +5,25 @@ import java.util.regex.Pattern;
 
 public class CleanInputText {
 	
-	public static String removeMath(String inputText){
+	private static String removeMath(String inputText){
 		String cleanText = "";
 		Pattern mathTags = Pattern.compile("<(dmath|math)[^>]*>(.+?)</(dmath|math)\\s*>", Pattern.DOTALL);
 		Matcher m1 = mathTags.matcher(inputText);
 		cleanText = m1.replaceAll("");
-		//System.out.println(cleanText);
 		return cleanText;
+	}
+	
+	private static String removeAnnotations(String inputText){
+		String cleanText = "";
+		Pattern mathTags = Pattern.compile("<(span)[^>]*>(.+?)</(span)\\s*>", Pattern.DOTALL);
+		Matcher m1 = mathTags.matcher(inputText);
+		cleanText = m1.replaceAll("$2");
+		return cleanText;
+	}
+
+	public static String clean(String inputText){
+		String cleanText = removeMath(inputText);
+        cleanText = removeAnnotations(cleanText);
+        return cleanText;
 	}
 }

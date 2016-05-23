@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
+import it.uniroma1.lcl.babelnet.BabelSense;
+import it.uniroma1.lcl.babelnet.data.*;
 import org.wikitolearn.EasyLinkAPI.models.EasyLinkBean;
 
 import com.cybozu.labs.langdetect.Detector;
@@ -22,10 +24,6 @@ import it.uniroma1.lcl.babelfy.core.Babelfy;
 import it.uniroma1.lcl.babelnet.BabelNet;
 import it.uniroma1.lcl.babelnet.BabelSynset;
 import it.uniroma1.lcl.babelnet.BabelSynsetID;
-import it.uniroma1.lcl.babelnet.data.BabelCategory;
-import it.uniroma1.lcl.babelnet.data.BabelDomain;
-import it.uniroma1.lcl.babelnet.data.BabelGloss;
-import it.uniroma1.lcl.babelnet.data.BabelPOS;
 import it.uniroma1.lcl.jlt.util.Language;
 
 public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
@@ -33,9 +31,13 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 	private Detector detector;
 	private Map<String, Language> languages;
 	private String inputText;
+	private String scoredCandidates;
+	private int threshold;
 	private ThreadProgress threadProgress;
 
-	public AnalyzeCallable(Detector detector, Map<String, Language> languages, String inputText, ThreadProgress t) {
+	public AnalyzeCallable(Detector detector, Map<String, Language> languages, String inputText, String scoredCandidates, int threshold, ThreadProgress t) {
+		this.threshold = threshold;
+		this.scoredCandidates = scoredCandidates;
 		this.detector = detector;
 		this.languages = languages;
 		this.inputText = inputText;
@@ -54,7 +56,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		threadProgress.setProgress(10);
 		List<EasyLinkBean> resultsList = new ArrayList<>();
 
-		String cleanText = CleanInputText.removeMath(inputText);
+		String cleanText = CleanInputText.clean(inputText);
 		String lang = "";
 		threadProgress.setStatus("Progress");
 		threadProgress.setProgress(20);
@@ -82,11 +84,15 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 				EasyLinkBean e = new EasyLinkBean();
 				String frag = cleanText.substring(annotation.getCharOffsetFragment().getStart(),
 						annotation.getCharOffsetFragment().getEnd() + 1);
-				e.setName(frag);
+				e.setId(syns.getId().getID());
+				e.setTitle(frag);
 				e.setBabelLink("http://babelnet.org/synset?word=" + annotation.getBabelSynsetID() + "&lang="
 						+ languages.get(lang));
-				e.setWikiLink(
-						"https://" + languages.get(lang).toString().toLowerCase() + ".wikipedia.org/wiki/" + frag);
+				List<BabelSense> wikiSenses = syns.getSenses(languages.get(lang), BabelSenseSource.WIKI);
+				if(wikiSenses != null && !wikiSenses.isEmpty()){
+					e.setWikiLink(
+							"https://" + languages.get(lang).toString().toLowerCase() + ".wikipedia.org/wiki/" + wikiSenses.get(0).getLemma());
+				}
 				threadProgress.setStatus("Progress");
 				threadProgress.setProgress(50);
 				// Get WikipediaCategories
@@ -107,9 +113,9 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 					e.setGlossSource(glosses.get(0).getSource().getSourceName());
 				}
 
-				printResult(lang, frag, annotation, syns, categories, domains, glosses);
+				//printResult(lang, frag, annotation, syns, categories, domains, glosses);
 
-				if (e.getName() != null && e.getGloss() != null) {
+				if (e.getTitle() != null && e.getGloss() != null) {
 					resultsList.add(e);
 				}
 			}
@@ -123,10 +129,16 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 	private void printResult(String lang, String frag, SemanticAnnotation annotation, BabelSynset syns,
 			List<BabelCategory> categories, HashMap<BabelDomain, Double> domains, List<BabelGloss> glosses) {
 
-		System.out.println(frag + "\t BabelSynset ID: " + annotation.getBabelSynsetID());
+		System.out.println(frag + "\t BabelSynset ID: " + syns.getId().getID());
 		System.out.println("\t Part Of Speech: " + syns.getPOS());
 		System.out.println("\t Synset type: " + syns.getSynsetType());
-		System.out.println("\t Main sense (IT): " + syns.getMainSense(languages.get(lang)));
+		System.out.println("\t Main sense (IT): " + syns.getMainSense(languages.get(lang)).getLemma());
+		List<BabelSense> senses = syns.getSenses(languages.get(lang), BabelSenseSource.WIKI);
+		if(!senses.isEmpty()) {
+			for (BabelSense sense : senses) {
+				System.out.println(sense);
+			}
+		}
 		System.out.println("\t BabelNet URL: " + annotation.getBabelNetURL());
 		System.out.println("\t DBPedia URL: " + annotation.getDBpediaURL());
 		System.out.println("\t Source: " + annotation.getSource());
@@ -148,7 +160,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 			System.out.println("\t BabelNet Domain: " + domain.getKey().getDomainString());
 			System.out.println("\t BabelNet Domain Score: " + domain.getValue());
 		}
-
+		System.out.println("\t Main Gloss: "  + syns.getMainGloss(languages.get(lang)));
 		for (BabelGloss g : glosses) {
 			System.out.println("\t Gloss: " + g.getGloss());
 			System.out.println("\t Gloss source:" + g.getSource().getSourceName());
@@ -159,7 +171,8 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		BabelfyParameters bp = new BabelfyParameters();
 		// extends the candidates sets with the aida_means relations from YAGO
 		bp.setExtendCandidatesWithAIDAmeans(true);
-		bp.setScoredCandidates(ScoredCandidates.TOP);
+		bp.setThreshold(threshold);
+		bp.setScoredCandidates(ScoredCandidates.valueOf(scoredCandidates));
 		// Secondo me l'exact matching non funziona, bisogna controllare bene
 		bp.setMatchingType(MatchingType.EXACT_MATCHING);
 		/*

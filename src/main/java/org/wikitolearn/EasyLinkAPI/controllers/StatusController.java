@@ -25,14 +25,18 @@ public class StatusController {
 	@Path("{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Object getStatus(@PathParam("id") UUID id) {
+		@SuppressWarnings("unchecked")
 		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("ActiveThreads");
 		// if("Progress".equals(activeThreads.get(id).getStatus()))
-		return activeThreads.get(id);
+        ThreadProgress  t = activeThreads.get(id);
+        return activeThreads.get(id);
+
 	}
 
 	@DELETE
 	@Path("{id}")
 	public Response deleteRequest(@PathParam("id") UUID id) {
+		@SuppressWarnings("unchecked")
 		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("ActiveThreads");
 		activeThreads.remove(id);
 		return Response.ok().build();
