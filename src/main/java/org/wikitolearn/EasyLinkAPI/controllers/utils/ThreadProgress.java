@@ -3,6 +3,8 @@ package org.wikitolearn.EasyLinkAPI.controllers.utils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+
 import org.wikitolearn.EasyLinkAPI.models.EasyLinkBean;
 
 public class ThreadProgress {
@@ -10,12 +12,22 @@ public class ThreadProgress {
 	private String status;
 	private float progress;
 	private List<EasyLinkBean> results;
+	private ExecutorService executorService;
 
-	public ThreadProgress(UUID id) {
+	public ThreadProgress(UUID id, ExecutorService executorService) {
+		this.executorService = executorService;
 		this.status = "Pending";
 		this.progress = 0;
 		this.id = id;
 		this.results = new ArrayList<>();
+	}
+
+	public ExecutorService getExecutorService() {
+		return executorService;
+	}
+
+	public void setExecutorService(ExecutorService executorService) {
+		this.executorService = executorService;
 	}
 
 	/**

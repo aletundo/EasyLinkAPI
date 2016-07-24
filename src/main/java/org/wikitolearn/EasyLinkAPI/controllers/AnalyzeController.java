@@ -91,12 +91,12 @@ public class AnalyzeController {
 		@SuppressWarnings("unchecked")
 		Map<UUID, ThreadProgress> activeThreads = (HashMap<UUID, ThreadProgress>) application
 				.getAttribute("ActiveThreads");
-		ThreadProgress t = new ThreadProgress(requestId);
-		activeThreads.put(requestId, t);
 
 		ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(requestId.toString()).build();
 
 		ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
+        ThreadProgress t = new ThreadProgress(requestId, e);
+        activeThreads.put(requestId, t);
 		AnalyzeCallable ac = new AnalyzeCallable(detector, languages, inputText, scoredCandidates, threshold, t);
 		e.submit(ac);
 		/*

@@ -1,6 +1,7 @@
 package org.wikitolearn.EasyLinkAPI.utils;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
 public class MongoConnection {
@@ -15,9 +16,9 @@ public class MongoConnection {
 		return INSTANCE;
 	}
 	
-	public MongoDatabase connect(){
-		MongoDatabase db = mongoClient.getDatabase("local");
-		return db;
+	public MongoCollection connect(){
+		MongoCollection collection = mongoClient.getDatabase("local").getCollection("annotations");
+		return collection;
 	}
 	
 	public void disconnect(){

@@ -15,15 +15,19 @@ public class CleanInputText {
 	
 	private static String removeAnnotations(String inputText){
 		String cleanText = "";
-		Pattern mathTags = Pattern.compile("<(span)[^>]*>(.+?)</(span)\\s*>", Pattern.DOTALL);
-		Matcher m1 = mathTags.matcher(inputText);
+		Pattern annotationTags = Pattern.compile("<(easylink)[^>]*>(.+?)</(easylink)\\s*>", Pattern.DOTALL);
+		Pattern annotationTags2 = Pattern.compile("<(span)[^>]*></(span)\\s*>", Pattern.DOTALL);
+		Matcher m1 = annotationTags.matcher(inputText);
 		cleanText = m1.replaceAll("$2");
+		Matcher m2 = annotationTags2.matcher(cleanText);
+		cleanText = m2.replaceAll("");
 		return cleanText;
 	}
 
 	public static String clean(String inputText){
 		String cleanText = removeMath(inputText);
         cleanText = removeAnnotations(cleanText);
+        System.out.println(cleanText);
         return cleanText;
 	}
 }

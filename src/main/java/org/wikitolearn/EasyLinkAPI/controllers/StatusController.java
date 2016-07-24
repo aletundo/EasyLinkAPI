@@ -38,6 +38,7 @@ public class StatusController {
 	public Response deleteRequest(@PathParam("id") UUID id) {
 		@SuppressWarnings("unchecked")
 		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("ActiveThreads");
+		activeThreads.get(id).getExecutorService().shutdownNow();
 		activeThreads.remove(id);
 		return Response.ok().build();
 	}

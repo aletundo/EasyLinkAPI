@@ -113,7 +113,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 					e.setGlossSource(glosses.get(0).getSource().getSourceName());
 				}
 
-				//printResult(lang, frag, annotation, syns, categories, domains, glosses);
+				printResult(lang, frag, annotation, syns, categories, domains, glosses);
 
 				if (e.getTitle() != null && e.getGloss() != null) {
 					resultsList.add(e);

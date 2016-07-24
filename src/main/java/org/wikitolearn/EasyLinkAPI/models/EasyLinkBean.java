@@ -22,7 +22,7 @@ public class EasyLinkBean {
 		return title;
 	}
 	/**
-	 * @param name the name to set
+	 * @param title the name to set
 	 */
 	public void setTitle(String title) {
 		this.title = title;
