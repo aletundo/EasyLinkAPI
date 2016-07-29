@@ -82,7 +82,7 @@ public class AnalyzeController {
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.TEXT_PLAIN)
-	public String analyze(@FormParam("wikitext") String inputText, @FormParam("scoredCandidates") String scoredCandidates, @FormParam("threshold") int threshold, @Context UriInfo ui) throws URISyntaxException {
+	public String analyze(@FormParam("wikitext") String inputText, @FormParam("scoredCandidates") String scoredCandidates, @FormParam("threshold") int threshold, @FormParam("babelDomain") String babelDomain, @Context UriInfo ui) throws URISyntaxException {
 		UUID requestId = UUID.randomUUID();
 		
 		System.out.println("Scored:" + scoredCandidates);
@@ -97,7 +97,7 @@ public class AnalyzeController {
 		ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
         ThreadProgress t = new ThreadProgress(requestId, e);
         activeThreads.put(requestId, t);
-		AnalyzeCallable ac = new AnalyzeCallable(detector, languages, inputText, scoredCandidates, threshold, t);
+		AnalyzeCallable ac = new AnalyzeCallable(detector, languages, inputText, scoredCandidates, threshold, babelDomain, t);
 		e.submit(ac);
 		/*
 		 * Future<List<EasyLinkBean>> f = e.submit(ac); List<EasyLinkBean>

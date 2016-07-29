@@ -33,10 +33,12 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 	private String inputText;
 	private String scoredCandidates;
 	private int threshold;
+    private String domain;
 	private ThreadProgress threadProgress;
 
-	public AnalyzeCallable(Detector detector, Map<String, Language> languages, String inputText, String scoredCandidates, int threshold, ThreadProgress t) {
-		this.threshold = threshold;
+	public AnalyzeCallable(Detector detector, Map<String, Language> languages, String inputText, String scoredCandidates, int threshold, String domain, ThreadProgress t) {
+        this.domain = domain;
+        this.threshold = threshold;
 		this.scoredCandidates = scoredCandidates;
 		this.detector = detector;
 		this.languages = languages;
@@ -96,7 +98,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 				threadProgress.setStatus("Progress");
 				threadProgress.setProgress(50);
 				// Get WikipediaCategories
-				List<BabelCategory> categories = syns.getCategories(languages.get(lang));
+				//List<BabelCategory> categories = syns.getCategories(languages.get(lang));
 
 				// Get BabelDomains and their scores
 				HashMap<BabelDomain, Double> domains = syns.getDomains();
@@ -113,10 +115,11 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 					e.setGlossSource(glosses.get(0).getSource().getSourceName());
 				}
 
-				printResult(lang, frag, annotation, syns, categories, domains, glosses);
+				printResult(lang, frag, annotation, syns, domains, glosses);
 
 				if (e.getTitle() != null && e.getGloss() != null) {
-					resultsList.add(e);
+                    if (domain == null || domain.trim().equals("") || domain.equals("ALL") || domain.equalsIgnoreCase(e.getBabelDomain()))
+					    resultsList.add(e);
 				}
 			}
 		}
@@ -126,8 +129,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 
 	}
 
-	private void printResult(String lang, String frag, SemanticAnnotation annotation, BabelSynset syns,
-			List<BabelCategory> categories, HashMap<BabelDomain, Double> domains, List<BabelGloss> glosses) {
+	private void printResult(String lang, String frag, SemanticAnnotation annotation, BabelSynset syns, HashMap<BabelDomain, Double> domains, List<BabelGloss> glosses) {
 
 		System.out.println(frag + "\t BabelSynset ID: " + syns.getId().getID());
 		System.out.println("\t Part Of Speech: " + syns.getPOS());
@@ -152,9 +154,9 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		// annotation
 		System.out.println("\t Score: " + annotation.getScore());
 
-		for (BabelCategory cat : categories) {
+		/*for (BabelCategory cat : categories) {
 			System.out.println("\t Category: " + cat.getCategory());
-		}
+		}*/
 
 		for (Entry<BabelDomain, Double> domain : domains.entrySet()) {
 			System.out.println("\t BabelNet Domain: " + domain.getKey().getDomainString());
@@ -181,9 +183,6 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		 * information to select a meaning
 		 */
 		bp.setMCS(MCS.ON);
-		// Se imposto il Threshold non ottengo gli score! Perchè?!?!
-		// bp.setThreshold(90.0);
-
 		return bp;
 	}
 }
