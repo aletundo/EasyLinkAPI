@@ -25,6 +25,7 @@ import it.uniroma1.lcl.babelnet.BabelNet;
 import it.uniroma1.lcl.babelnet.BabelSynset;
 import it.uniroma1.lcl.babelnet.BabelSynsetID;
 import it.uniroma1.lcl.jlt.util.Language;
+import org.wikitolearn.EasyLinkAPI.models.Gloss;
 
 public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 
@@ -111,6 +112,14 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 				List<BabelGloss> glosses = syns.getGlosses(languages.get(lang));
 
 				if (!glosses.isEmpty()) {
+                    List<Gloss> glossesToAdd = new ArrayList<>();
+					for(BabelGloss gloss : glosses){
+                        Gloss g = new Gloss();
+                        g.setGloss(gloss.getGloss());
+                        g.setGlossSource(gloss.getSource().getSourceName());
+                        glossesToAdd.add(g);
+                    }
+                    e.setGlosses(glossesToAdd);
 					e.setGloss(glosses.get(0).getGloss());
 					e.setGlossSource(glosses.get(0).getSource().getSourceName());
 				}

@@ -1,5 +1,7 @@
 package org.wikitolearn.EasyLinkAPI.models;
 
+import java.util.List;
+
 public class EasyLinkBean {
 	private String id;
 	private String title;
@@ -10,19 +12,28 @@ public class EasyLinkBean {
 	private String dbPediaLink;
 	private String babelDomain;
 	private String glossSource;
+    private List<Gloss> glosses;
 	
 	public EasyLinkBean(){
 		
 	}
+
+    public List<Gloss> getGlosses() {
+        return glosses;
+    }
+
+    public void setGlosses(List<Gloss> glosses) {
+        this.glosses = glosses;
+    }
 	
 	/**
-	 * @return the name
+	 * @return the title
 	 */
 	public String getTitle() {
 		return title;
 	}
 	/**
-	 * @param title the name to set
+	 * @param title the title to set
 	 */
 	public void setTitle(String title) {
 		this.title = title;
