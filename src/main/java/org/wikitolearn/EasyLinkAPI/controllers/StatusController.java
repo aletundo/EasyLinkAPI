@@ -26,7 +26,7 @@ public class StatusController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Object getStatus(@PathParam("id") UUID id) {
 		@SuppressWarnings("unchecked")
-		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("ActiveThreads");
+		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("activeThreads");
 		// if("Progress".equals(activeThreads.get(id).getStatus()))
         ThreadProgress  t = activeThreads.get(id);
         return activeThreads.get(id);
@@ -37,7 +37,7 @@ public class StatusController {
 	@Path("{id}")
 	public Response deleteRequest(@PathParam("id") UUID id) {
 		@SuppressWarnings("unchecked")
-		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("ActiveThreads");
+		Map<UUID, ThreadProgress> activeThreads = (Map<UUID, ThreadProgress>) application.getAttribute("activeThreads");
 		activeThreads.get(id).getExecutorService().shutdownNow();
 		activeThreads.remove(id);
 		return Response.ok().build();

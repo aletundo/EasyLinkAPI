@@ -11,10 +11,6 @@ import it.uniroma1.lcl.babelnet.BabelSense;
 import it.uniroma1.lcl.babelnet.data.*;
 import org.wikitolearn.EasyLinkAPI.models.EasyLinkBean;
 
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-
 import it.uniroma1.lcl.babelfy.commons.BabelfyParameters;
 import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.MCS;
 import it.uniroma1.lcl.babelfy.commons.BabelfyParameters.MatchingType;
@@ -29,20 +25,18 @@ import org.wikitolearn.EasyLinkAPI.models.Gloss;
 
 public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 
-	private Detector detector;
-	private Map<String, Language> languages;
+	private Language language;
 	private String inputText;
 	private String scoredCandidates;
 	private int threshold;
     private String domain;
 	private ThreadProgress threadProgress;
 
-	public AnalyzeCallable(Detector detector, Map<String, Language> languages, String inputText, String scoredCandidates, int threshold, String domain, ThreadProgress t) {
+	public AnalyzeCallable(Language language, String inputText, String scoredCandidates, int threshold, String domain, ThreadProgress t) {
         this.domain = domain;
         this.threshold = threshold;
 		this.scoredCandidates = scoredCandidates;
-		this.detector = detector;
-		this.languages = languages;
+		this.language = language;
 		this.inputText = inputText;
 		this.threadProgress = t;
 	}
@@ -60,25 +54,14 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		List<EasyLinkBean> resultsList = new ArrayList<>();
 
 		String cleanText = CleanInputText.clean(inputText);
-		String lang = "";
 		threadProgress.setStatus("Progress");
 		threadProgress.setProgress(20);
-
-		try {
-			detector = DetectorFactory.create();
-			detector.append(cleanText);
-			lang = detector.detect();
-			// System.out.println(lang);
-		} catch (LangDetectException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
 
 		BabelNet bn = BabelNet.getInstance();
 		Babelfy bfy = new Babelfy(setBabelfyParameters());
 		threadProgress.setStatus("Progress");
 		threadProgress.setProgress(30);
-		List<SemanticAnnotation> bfyAnnotations = bfy.babelfy(cleanText, languages.get(lang));
+		List<SemanticAnnotation> bfyAnnotations = bfy.babelfy(cleanText, language);
 		threadProgress.setStatus("Progress");
 		threadProgress.setProgress(40);
 		for (SemanticAnnotation annotation : bfyAnnotations) {
@@ -87,14 +70,13 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 				EasyLinkBean e = new EasyLinkBean();
 				String frag = cleanText.substring(annotation.getCharOffsetFragment().getStart(),
 						annotation.getCharOffsetFragment().getEnd() + 1);
-				e.setId(syns.getId().getID());
+				e.setBabelnetId(syns.getId().getID());
 				e.setTitle(frag);
-				e.setBabelLink("http://babelnet.org/synset?word=" + annotation.getBabelSynsetID() + "&lang="
-						+ languages.get(lang));
-				List<BabelSense> wikiSenses = syns.getSenses(languages.get(lang), BabelSenseSource.WIKI);
+				e.setBabelLink("http://babelnet.org/synset?word=" + annotation.getBabelSynsetID() + "&lang=" + language.getName());
+				List<BabelSense> wikiSenses = syns.getSenses(language, BabelSenseSource.WIKI);
 				if(wikiSenses != null && !wikiSenses.isEmpty()){
 					e.setWikiLink(
-							"https://" + languages.get(lang).toString().toLowerCase() + ".wikipedia.org/wiki/" + wikiSenses.get(0).getLemma());
+							"https://" + language.toString().toLowerCase() + ".wikipedia.org/wiki/" + wikiSenses.get(0).getLemma());
 				}
 				threadProgress.setStatus("Progress");
 				threadProgress.setProgress(50);
@@ -109,7 +91,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 					e.setBabelDomain(entry.getKey().getDomainString());
 				}
 				// Get glosses
-				List<BabelGloss> glosses = syns.getGlosses(languages.get(lang));
+				List<BabelGloss> glosses = syns.getGlosses(language);
 
 				if (!glosses.isEmpty()) {
                     List<Gloss> glossesToAdd = new ArrayList<>();
@@ -124,7 +106,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 					e.setGlossSource(glosses.get(0).getSource().getSourceName());
 				}
 
-				printResult(lang, frag, annotation, syns, domains, glosses);
+				printResult(language, frag, annotation, syns, domains, glosses);
 
 				if (e.getTitle() != null && e.getGloss() != null) {
                     if (domain == null || domain.trim().equals("") || domain.equals("ALL") || domain.equalsIgnoreCase(e.getBabelDomain()))
@@ -138,13 +120,13 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 
 	}
 
-	private void printResult(String lang, String frag, SemanticAnnotation annotation, BabelSynset syns, HashMap<BabelDomain, Double> domains, List<BabelGloss> glosses) {
+	private void printResult(Language language, String frag, SemanticAnnotation annotation, BabelSynset syns, HashMap<BabelDomain, Double> domains, List<BabelGloss> glosses) {
 
 		System.out.println(frag + "\t BabelSynset ID: " + syns.getId().getID());
 		System.out.println("\t Part Of Speech: " + syns.getPOS());
 		System.out.println("\t Synset type: " + syns.getSynsetType());
-		System.out.println("\t Main sense (IT): " + syns.getMainSense(languages.get(lang)).getLemma());
-		List<BabelSense> senses = syns.getSenses(languages.get(lang), BabelSenseSource.WIKI);
+		System.out.println("\t Main sense (IT): " + syns.getMainSense(language).getLemma());
+		List<BabelSense> senses = syns.getSenses(language, BabelSenseSource.WIKI);
 		if(!senses.isEmpty()) {
 			for (BabelSense sense : senses) {
 				System.out.println(sense);
@@ -171,7 +153,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 			System.out.println("\t BabelNet Domain: " + domain.getKey().getDomainString());
 			System.out.println("\t BabelNet Domain Score: " + domain.getValue());
 		}
-		System.out.println("\t Main Gloss: "  + syns.getMainGloss(languages.get(lang)));
+		System.out.println("\t Main Gloss: "  + syns.getMainGloss(language));
 		for (BabelGloss g : glosses) {
 			System.out.println("\t Gloss: " + g.getGloss());
 			System.out.println("\t Gloss source:" + g.getSource().getSourceName());

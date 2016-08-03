@@ -3,7 +3,7 @@ package org.wikitolearn.EasyLinkAPI.models;
 import java.util.List;
 
 public class EasyLinkBean {
-	private String id;
+	private String babelnetId;
 	private String title;
 	private String gloss;
 	private String language;
@@ -126,16 +126,16 @@ public class EasyLinkBean {
 	}
 
 	/**
-	 * @return the id
+	 * @return the balenetId
 	 */
-	public String getId() {
-		return id;
+	public String getBabelnetId() {
+		return babelnetId;
 	}
 
 	/**
-	 * @param id the id to set
+	 * @param babelnetId the babelnetId to set
 	 */
-	public void setId(String id) {
-		this.id = id;
+	public void setBabelnetId(String babelnetId) {
+		this.babelnetId = babelnetId;
 	}
 }
