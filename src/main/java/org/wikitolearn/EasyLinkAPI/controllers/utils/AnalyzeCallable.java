@@ -23,14 +23,14 @@ import it.uniroma1.lcl.babelnet.BabelSynsetID;
 import it.uniroma1.lcl.jlt.util.Language;
 import org.wikitolearn.EasyLinkAPI.models.Gloss;
 
-public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
+public abstract class AnalyzeCallable<T> implements Callable<T> {
 
 	private Language language;
 	private String inputText;
 	private String scoredCandidates;
 	private int threshold;
     private String domain;
-	private TaskStateAbstract taskStateAbstract;
+	private TaskStateAbstract taskState;
 
 	public AnalyzeCallable(Language language, String inputText, String scoredCandidates, int threshold, String domain, TaskStateAbstract t) {
         this.domain = domain;
@@ -38,17 +38,47 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		this.scoredCandidates = scoredCandidates;
 		this.language = language;
 		this.inputText = inputText;
-		this.taskStateAbstract = t;
+		this.taskState = t;
 	}
 
-	@Override
-	public List<EasyLinkBean> call() throws Exception {
-		List<EasyLinkBean> results = getAndProcessAnnotations(inputText);
-		taskStateAbstract.setResults(results);
-		return results;
-	}
+	public abstract T buildResults(String inputText);
 
-	private List<EasyLinkBean> getAndProcessAnnotations(String inputText) {
+    public Language getLanguage() {
+        return language;
+    }
+
+    public String getInputText() {
+        return inputText;
+    }
+
+    public String getScoredCandidates() {
+        return scoredCandidates;
+    }
+
+    public int getThreshold() {
+        return threshold;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public TaskStateAbstract getTaskState() {
+        return taskState;
+    }
+
+    public List<SemanticAnnotation> getAnnotations(String cleanText){
+        getTaskState().setStatus("Progress");
+        getTaskState().setProgress(10);
+        getTaskState().setProgress(20);
+        Babelfy bfy = new Babelfy(setBabelfyParameters());
+        getTaskState().setProgress(30);
+        List<SemanticAnnotation> bfyAnnotations = bfy.babelfy(cleanText, getLanguage());
+        getTaskState().setProgress(40);
+        return bfyAnnotations;
+    }
+
+	/*private List<EasyLinkBean> getAndProcessAnnotations(String inputText) {
 		taskStateAbstract.setStatus("Progress");
 		taskStateAbstract.setProgress(10);
 		List<EasyLinkBean> resultsList = new ArrayList<>();
@@ -118,9 +148,9 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		taskStateAbstract.setProgress(100);
 		return resultsList;
 
-	}
+	}*/
 
-	private void printResult(Language language, String frag, SemanticAnnotation annotation, BabelSynset syns, HashMap<BabelDomain, Double> domains, List<BabelGloss> glosses) {
+	public void printResult(Language language, String frag, SemanticAnnotation annotation, BabelSynset syns, HashMap<BabelDomain, Double> domains, List<BabelGloss> glosses) {
 
 		System.out.println(frag + "\t BabelSynset ID: " + syns.getId().getID());
 		System.out.println("\t Part Of Speech: " + syns.getPOS());
@@ -160,7 +190,7 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 		}
 	}
 
-	private BabelfyParameters setBabelfyParameters() {
+	public BabelfyParameters setBabelfyParameters() {
 		BabelfyParameters bp = new BabelfyParameters();
 		// extends the candidates sets with the aida_means relations from YAGO
 		bp.setExtendCandidatesWithAIDAmeans(true);

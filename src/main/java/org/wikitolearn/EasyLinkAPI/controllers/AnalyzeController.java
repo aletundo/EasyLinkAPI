@@ -24,6 +24,7 @@ import javax.ws.rs.core.UriInfo;
 import it.uniroma1.lcl.jlt.util.Language;
 import jersey.repackaged.com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.wikitolearn.EasyLinkAPI.controllers.utils.AnalyzeCallable;
+import org.wikitolearn.EasyLinkAPI.controllers.utils.AnalyzeTopCallable;
 import org.wikitolearn.EasyLinkAPI.controllers.utils.TaskStateAbstract;
 import org.wikitolearn.EasyLinkAPI.controllers.utils.TaskStateList;
 
@@ -59,7 +60,7 @@ public class AnalyzeController {
         ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
         TaskStateAbstract t = new TaskStateList(requestId, e);
         activeThreads.put(requestId, t);
-        AnalyzeCallable ac = new AnalyzeCallable(languages.get(language), inputText, scoredCandidates, threshold, babelDomain, t);
+        AnalyzeCallable ac = new AnalyzeTopCallable(languages.get(language), inputText, scoredCandidates, threshold, babelDomain, t);
         e.submit(ac);
 		/*
 		 * Future<List<EasyLinkBean>> f = e.submit(ac); List<EasyLinkBean>
