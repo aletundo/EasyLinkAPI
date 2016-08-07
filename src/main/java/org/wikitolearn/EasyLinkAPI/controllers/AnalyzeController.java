@@ -58,7 +58,7 @@ public class AnalyzeController {
         AnalyzeCallable analyzeCallable;
 
         ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
-        if(BabelfyParameters.ScoredCandidates.TOP.equals(scoredCandidates)){
+        if(BabelfyParameters.ScoredCandidates.TOP.name().equals(scoredCandidates)){
             taskState = new TaskStateList(requestId, e);
             analyzeCallable = new AnalyzeTopCallable(languages.get(language), inputText, scoredCandidates, threshold, babelDomain, taskState);
         }else{
