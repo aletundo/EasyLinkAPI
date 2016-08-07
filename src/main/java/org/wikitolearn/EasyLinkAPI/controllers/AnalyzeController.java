@@ -21,12 +21,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import it.uniroma1.lcl.babelfy.commons.BabelfyParameters;
 import it.uniroma1.lcl.jlt.util.Language;
 import jersey.repackaged.com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.AnalyzeCallable;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.AnalyzeTopCallable;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.TaskStateAbstract;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.TaskStateList;
+import org.wikitolearn.EasyLinkAPI.controllers.utils.*;
 
 @Singleton
 @Path("/analyze")
@@ -56,12 +54,19 @@ public class AnalyzeController {
         Map<String, Language> languages = (HashMap<String, Language>) application.getAttribute("languages");
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(requestId.toString()).build();
+        TaskStateAbstract taskState;
+        AnalyzeCallable analyzeCallable;
 
         ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
-        TaskStateAbstract t = new TaskStateList(requestId, e);
-        activeThreads.put(requestId, t);
-        AnalyzeCallable ac = new AnalyzeTopCallable(languages.get(language), inputText, scoredCandidates, threshold, babelDomain, t);
-        e.submit(ac);
+        if(BabelfyParameters.ScoredCandidates.TOP.equals(scoredCandidates)){
+            taskState = new TaskStateList(requestId, e);
+            analyzeCallable = new AnalyzeTopCallable(languages.get(language), inputText, scoredCandidates, threshold, babelDomain, taskState);
+        }else{
+            taskState = new TaskStateMap(requestId, e);
+            analyzeCallable = new AnalyzeAllCallable(languages.get(language), inputText, scoredCandidates, threshold, babelDomain, taskState);
+        }
+        activeThreads.put(requestId, taskState);
+        e.submit(analyzeCallable);
 		/*
 		 * Future<List<EasyLinkBean>> f = e.submit(ac); List<EasyLinkBean>
 		 * results = new ArrayList<>(); try { results = f.get(); } catch
