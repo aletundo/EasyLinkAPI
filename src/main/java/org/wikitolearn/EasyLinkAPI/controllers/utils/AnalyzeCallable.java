@@ -30,40 +30,40 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 	private String scoredCandidates;
 	private int threshold;
     private String domain;
-	private ThreadProgress threadProgress;
+	private TaskStateAbstract taskStateAbstract;
 
-	public AnalyzeCallable(Language language, String inputText, String scoredCandidates, int threshold, String domain, ThreadProgress t) {
+	public AnalyzeCallable(Language language, String inputText, String scoredCandidates, int threshold, String domain, TaskStateAbstract t) {
         this.domain = domain;
         this.threshold = threshold;
 		this.scoredCandidates = scoredCandidates;
 		this.language = language;
 		this.inputText = inputText;
-		this.threadProgress = t;
+		this.taskStateAbstract = t;
 	}
 
 	@Override
 	public List<EasyLinkBean> call() throws Exception {
 		List<EasyLinkBean> results = getAndProcessAnnotations(inputText);
-		threadProgress.setResults(results);
+		taskStateAbstract.setResults(results);
 		return results;
 	}
 
 	private List<EasyLinkBean> getAndProcessAnnotations(String inputText) {
-		threadProgress.setStatus("Progress");
-		threadProgress.setProgress(10);
+		taskStateAbstract.setStatus("Progress");
+		taskStateAbstract.setProgress(10);
 		List<EasyLinkBean> resultsList = new ArrayList<>();
 
 		String cleanText = CleanInputText.clean(inputText);
-		threadProgress.setStatus("Progress");
-		threadProgress.setProgress(20);
+		taskStateAbstract.setStatus("Progress");
+		taskStateAbstract.setProgress(20);
 
 		BabelNet bn = BabelNet.getInstance();
 		Babelfy bfy = new Babelfy(setBabelfyParameters());
-		threadProgress.setStatus("Progress");
-		threadProgress.setProgress(30);
+		taskStateAbstract.setStatus("Progress");
+		taskStateAbstract.setProgress(30);
 		List<SemanticAnnotation> bfyAnnotations = bfy.babelfy(cleanText, language);
-		threadProgress.setStatus("Progress");
-		threadProgress.setProgress(40);
+		taskStateAbstract.setStatus("Progress");
+		taskStateAbstract.setProgress(40);
 		for (SemanticAnnotation annotation : bfyAnnotations) {
 			BabelSynset syns = bn.getSynset(new BabelSynsetID(annotation.getBabelSynsetID()));
 			if (BabelPOS.NOUN.equals(syns.getPOS()) || BabelPOS.ADJECTIVE.equals(syns.getPOS())) {
@@ -78,8 +78,8 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 					e.setWikiLink(
 							"https://" + language.toString().toLowerCase() + ".wikipedia.org/wiki/" + wikiSenses.get(0).getLemma());
 				}
-				threadProgress.setStatus("Progress");
-				threadProgress.setProgress(50);
+				taskStateAbstract.setStatus("Progress");
+				taskStateAbstract.setProgress(50);
 				// Get WikipediaCategories
 				//List<BabelCategory> categories = syns.getCategories(languages.get(lang));
 
@@ -114,8 +114,8 @@ public class AnalyzeCallable implements Callable<List<EasyLinkBean>> {
 				}
 			}
 		}
-		threadProgress.setStatus("Completed");
-		threadProgress.setProgress(100);
+		taskStateAbstract.setStatus("Completed");
+		taskStateAbstract.setProgress(100);
 		return resultsList;
 
 	}

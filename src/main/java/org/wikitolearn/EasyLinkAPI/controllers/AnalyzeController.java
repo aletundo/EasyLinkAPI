@@ -1,6 +1,5 @@
 package org.wikitolearn.EasyLinkAPI.controllers;
 
-import java.io.File;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +8,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
@@ -23,17 +21,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
-import it.uniroma1.lcl.babelfy.commons.BabelfyConfiguration;
-import it.uniroma1.lcl.babelnet.BabelNetConfiguration;
-import it.uniroma1.lcl.jlt.Configuration;
 import it.uniroma1.lcl.jlt.util.Language;
 import jersey.repackaged.com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.wikitolearn.EasyLinkAPI.controllers.utils.AnalyzeCallable;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.ThreadProgress;
-
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
+import org.wikitolearn.EasyLinkAPI.controllers.utils.TaskStateAbstract;
+import org.wikitolearn.EasyLinkAPI.controllers.utils.TaskStateList;
 
 @Singleton
 @Path("/analyze")
@@ -58,14 +50,14 @@ public class AnalyzeController {
         System.out.println("Threshold:" + threshold);
         System.out.println("Language: " + language);
         @SuppressWarnings("unchecked")
-        Map<UUID, ThreadProgress> activeThreads = (HashMap<UUID, ThreadProgress>) application
+        Map<UUID, TaskStateAbstract> activeThreads = (HashMap<UUID, TaskStateAbstract>) application
                 .getAttribute("activeThreads");
         Map<String, Language> languages = (HashMap<String, Language>) application.getAttribute("languages");
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(requestId.toString()).build();
 
         ExecutorService e = Executors.newSingleThreadExecutor(threadFactory);
-        ThreadProgress t = new ThreadProgress(requestId, e);
+        TaskStateAbstract t = new TaskStateList(requestId, e);
         activeThreads.put(requestId, t);
         AnalyzeCallable ac = new AnalyzeCallable(languages.get(language), inputText, scoredCandidates, threshold, babelDomain, t);
         e.submit(ac);

@@ -7,19 +7,17 @@ import java.util.concurrent.ExecutorService;
 
 import org.wikitolearn.EasyLinkAPI.models.EasyLinkBean;
 
-public class ThreadProgress {
+public abstract class TaskStateAbstract<T> {
 	private UUID id;
 	private String status;
 	private float progress;
-	private List<EasyLinkBean> results;
 	private ExecutorService executorService;
 
-	public ThreadProgress(UUID id, ExecutorService executorService) {
+	public TaskStateAbstract(UUID id, ExecutorService executorService) {
 		this.executorService = executorService;
 		this.status = "Pending";
 		this.progress = 0;
 		this.id = id;
-		this.results = new ArrayList<>();
 	}
 
 	public ExecutorService getExecutorService() {
@@ -78,16 +76,11 @@ public class ThreadProgress {
 	/**
 	 * @return the results
 	 */
-	public List<EasyLinkBean> getResults() {
-		return results;
-	}
+	public abstract T getResults();
 
 	/**
-	 * @param results
-	 *            the results to set
+	 * the results to set
 	 */
-	public void setResults(List<EasyLinkBean> results) {
-		this.results = results;
-	}
+	public abstract void setResults(T results);
 
 }

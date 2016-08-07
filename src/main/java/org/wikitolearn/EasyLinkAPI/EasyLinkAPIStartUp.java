@@ -4,20 +4,16 @@ package org.wikitolearn.EasyLinkAPI;
  * Created by alessandro on 03/08/16.
  */
 
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
 import it.uniroma1.lcl.babelfy.commons.BabelfyConfiguration;
 import it.uniroma1.lcl.babelnet.BabelNetConfiguration;
 import it.uniroma1.lcl.jlt.Configuration;
 import it.uniroma1.lcl.jlt.util.Language;
-import org.wikitolearn.EasyLinkAPI.controllers.utils.ThreadProgress;
+import org.wikitolearn.EasyLinkAPI.controllers.utils.TaskStateAbstract;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
-import javax.ws.rs.core.Context;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +41,7 @@ public class EasyLinkAPIStartUp implements ServletContextListener {
         languages.put("es", Language.ES);
         languages.put("de", Language.DE);
 
-        application.setAttribute("activeThreads", new HashMap<UUID, ThreadProgress>());
+        application.setAttribute("activeThreads", new HashMap<UUID, TaskStateAbstract>());
         application.setAttribute("languages", languages);
     }
 
